@@ -1,0 +1,29 @@
+#! /bin/bash
+RED='\033[0;31m'
+GR='\033[0;32m'
+YL='\033[0;33m'
+BL='\033[0;34m'
+MG='\033[0;35m'
+CY='\033[0;36m'
+NC='\033[0m'
+NORM=$(tput sgr0)
+BOLD=$(tput sgr0)
+
+echo -e "Username to delete: ${BL}${1}${NC}"
+if [[ $# -eq 0 ]] ; then
+    echo 'No username provided'
+    exit 1
+fi
+
+for uname in "$@"
+do
+HOSTNAME=$(hostname)
+
+echo -e "Username to delete: ${BL}${uname}${NC}"
+userdel $uname -f -r && echo -e "Success User ${RED}DELETED${NC}"&& ./telegram-send "User ${uname} deleted from $HOSTNAME";
+
+sed -i "/^${uname}$/d" createdUsers.txt
+rm ./configs/${uname};
+./telegram-send "$massagetelegram";
+
+done

@@ -1,0 +1,29 @@
+#! /bin/bash
+sudo apt update && apt upgrade -y;
+NEW_SSH_PORT=2737;
+touch createdUsers.txt;
+touch ucreator;
+touch uremover;
+touch telegram-send;
+chmod +x ucreator;
+chmod +x uremover;
+chmod +x telegram-send;
+apt-get install net-tools;
+apt-get install -y nethogs;
+mkdir configs;
+
+# Change the hostname
+#hostnamectl set-hostname Sarboland15
+# Adjust firewall rules (UFW for Ubuntu)
+sudo ufw allow "$NEW_SSH_PORT"/tcp;
+
+# Update SSH configuration
+sudo sed -i "s/^Port 22$/Port ${NEW_SSH_PORT}/" /etc/ssh/sshd_config;
+sudo sed -i "s/^PermitRootLogin prohibit-password$/PermitRootLogin yes/" /etc/ssh/sshd_config;
+sudo sed -i "s/^PasswordAuthentication no$/PasswordAuthentication yes/" /etc/ssh/sshd_config
+# Restart SSH service
+sudo systemctl restart ssh;
+
+echo "SSH port changed to $NEW_SSH_PORT. Remember to update your firewall settings!";
+
+

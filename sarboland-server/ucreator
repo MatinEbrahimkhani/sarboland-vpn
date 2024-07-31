@@ -1,0 +1,42 @@
+#! /bin/bash
+RED='\033[0;31m'
+GR='\033[0;32m'
+YL='\033[0;33m'
+BL='\033[0;34m'
+MG='\033[0;35m'
+CY='\033[0;36m'
+NC='\033[0m'
+NORM=$(tput sgr0)
+BOLD=$(tput sgr0)
+
+
+
+if [[ $# -eq 0 ]] ; then
+    echo 'No username provided'
+    exit 1
+fi
+
+for uname in "$@"
+do
+
+echo -e "Requested username ---> ${RED} ${uname} ${NC}"
+HOST="`hostname -I`"
+USR=$uname;
+PWD=$uname;
+SSH_PORT="${SSH_CLIENT##* }"
+HASHEDPWD="$(python3 -c 'import crypt; print(crypt.crypt("'"$PWD"'"))')"
+useradd -m -p $HASHEDPWD $USR && echo -e "Success user ${GR}CREATED ${NC}";
+
+
+HOSTNAME=$(hostname)
+massage="$HOSTNAME\nHost:     ${BL}${HOST}${NC}\nSSH Port: ${BL}${SSH_PORT}${NC}\nUsername: ${BL}${USR}${NC}\nPassword: ${BL}${PWD}${NC}\n";
+massagefile="$HOSTNAME\nHost:     ${HOST}\nSSH Port: ${SSH_PORT}\nUsername: ${USR}\nPassword: ${PWD}";
+massagetelegram="$HOSTNAME%0AHost:     ${HOST}%0ASSH Port: ${SSH_PORT}%0AUsername: ${USR}%0APassword: ${PWD}";
+
+echo -e "$massage";
+echo "$USR">>"createdUsers.txt";
+mkdir -p configs;
+touch ./configs/${USR};
+./telegram-send "$massagetelegram";
+echo -e $massagefile>>./configs/${USR};
+done
