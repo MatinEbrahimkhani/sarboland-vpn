@@ -1,0 +1,110 @@
+#!/bin/bash
+
+# Define the SSH connection parameters
+ssh_user="sarboland"
+ssh_host="127.0.0.1"
+ssh_port="9011"
+ssh_password="sarboland"
+
+# Define the usage function
+function usage() {
+  echo "Usage: $0 [-h] [-u user] [-H host] [-p port] [-P password]"
+  echo "  -h              Display this help message."
+  echo "  -u user         The SSH user name. Default: $ssh_user"
+  echo "  -H host         The SSH host name or IP address. Default: $ssh_host"
+  echo "  -p port         The SSH port number. Default: $ssh_port"
+  echo "  -P password     The SSH password."
+}
+
+# Parse the command-line options
+while getopts ":hu:H:p:P:" opt; do
+  case ${opt} in
+    h )
+      usage
+      exit 0
+      ;;
+    u )
+      ssh_user=$OPTARG
+      ;;
+    H )
+      ssh_host=$OPTARG
+      ;;
+    p )
+      ssh_port=$OPTARG
+      ;;
+    P )
+      ssh_password=$OPTARG
+      ;;
+    \? )
+      echo "Invalid option: -$OPTARG" 1>&2
+      usage
+      exit 1
+      ;;
+    : )
+      echo "Option -$OPTARG requires an argument." 1>&2
+      usage
+      exit 1
+      ;;
+  esac
+done
+shift $((OPTIND -1))
+
+# Check and install requirements
+function install_requirements() {
+  if ! command -v sshpass &> /dev/null; then
+    echo "Installing sshpass..."
+    sudo apt-get update
+    sudo apt-get install -y sshpass
+  fi
+
+  if ! command -v sshuttle &> /dev/null; then
+    echo "Installing sshuttle..."
+    sudo apt-get update
+    sudo apt-get install -y sshuttle
+  fi
+}
+
+# Install requirements
+install_requirements
+
+# Define the VPN functions
+function vpn_on() {
+  sudo systemctl restart systemd-resolved
+  sshuttle --dns -r "$ssh_user@$ssh_host:$ssh_port" 0/0 -x "$ssh_host" --ssh-cmd "sshpass -p $ssh_password ssh"
+}
+
+function vpn_off() {
+  pkill sshuttle
+}
+
+# Turn off any existing VPN connections
+vpn_off > /dev/null 2>&1
+
+# Turn on the VPN
+vpn_on
+
+# Wait for user input before closing the VPN connection
+while true; do
+  echo "Choose an option below:"
+  read -n 1 -p "[q]Turn Off     [r]Restart VPN" choice;
+  echo "";
+  case $choice in
+    q|ض)
+      echo "";
+      trap vpn_off EXIT
+      exit 1
+      ;;
+    r|ق)
+      vpn_off
+      clear
+      vpn_on
+      ;;
+    *)
+      echo "Invalid choice. Please try again."
+      ;;
+  esac
+  echo "";
+done
+
+# Call the function when the terminal is closed
+trap vpn_off EXIT
